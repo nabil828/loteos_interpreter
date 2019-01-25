@@ -1,9 +1,9 @@
 import sys
 import os
-import scanner
+import Scanner
 
 
-class lox:
+class Lox:
     had_error = False  # class variable
 
     # def __init__(self):
@@ -21,7 +21,7 @@ class lox:
 
     # static method
     def run(self, source):
-        obj = scanner.Scanner(source)
+        obj = Scanner.Scanner(source)
         tokens = obj.scan_tokens()
 
         for token in tokens:
@@ -51,8 +51,8 @@ class lox:
 
 
 def main():
-    program = lox()
-    # The first argument in sys.argv will alwyas be lox.py
+    program = Lox()
+    # The first argument in sys.argv will always be Lox.py
     num_args = len(sys.argv) - 1
     if num_args > 1:
         print("Usage: pylox [script]")
