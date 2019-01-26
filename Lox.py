@@ -1,7 +1,9 @@
 import sys
 import os
 import Scanner
-
+from TokenType import TokenType
+import Parser
+import AstPrinter
 
 class Lox:
     had_error = False  # class variable
@@ -17,18 +19,31 @@ class Lox:
             # If we had an error, we should reset at new prompt
             self.had_error = False
 
-
-
     # static method
     def run(self, source):
+        # scanning
         obj = Scanner.Scanner(source)
         tokens = obj.scan_tokens()
 
         for token in tokens:
             print token
 
+        parser = Parser.Parser(self, tokens)
+        expression = parser.parse()
+
+        # Stop if there was a syntax error.
+        if self.had_error:
+            return
+        print(AstPrinter.AstPrinter().print_ast(expression))
+
+    def parse_error(self, token, msg):
+        if token.token_type == TokenType.EOF:
+            self.report(token.line, "at end", msg)
+        else:
+            self.report(token.line, " at '" + token.lexeme + "'", msg)
+
     # static method
-    def error(self, line, message):
+    def scan_error(self, line, message):
         self.report(line, "", message)
 
     # static method
