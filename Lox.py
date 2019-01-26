@@ -4,9 +4,14 @@ import Scanner
 from TokenType import TokenType
 import Parser
 import AstPrinter
+import Interpreter
+
 
 class Lox:
     had_error = False  # class variable
+    had_runtime_error = False
+
+
 
     # def __init__(self):
 
@@ -18,6 +23,7 @@ class Lox:
 
             # If we had an error, we should reset at new prompt
             self.had_error = False
+            self.had_runtime_error = False
 
     # static method
     def run(self, source):
@@ -35,6 +41,13 @@ class Lox:
         if self.had_error:
             return
         print(AstPrinter.AstPrinter().print_ast(expression))
+
+        interpreter = Interpreter.Interpreter()
+        interpreter.interpret(expression)
+
+    def runtime_error(self, error):
+        print(error.message, "\n[line ", error.token.line, "]")
+        self.had_runtime_error = True
 
     def parse_error(self, token, msg):
         if token.token_type == TokenType.EOF:
