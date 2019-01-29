@@ -6,12 +6,16 @@ import Parser
 import AstPrinter
 import Interpreter
 
+from grammar import Binary
+from grammar import Unary
+from grammar import Literal
+from grammar import Grouping
+from Token import Token
+
 
 class Lox:
     had_error = False  # class variable
     had_runtime_error = False
-
-
 
     # def __init__(self):
 
@@ -30,17 +34,24 @@ class Lox:
         # scanning
         obj = Scanner.Scanner(source)
         tokens = obj.scan_tokens()
-
+        #
         for token in tokens:
             print token
 
+        # Semi parsing: representing code
+        # expression = Binary(
+        #     Unary(Token(TokenType.MINUS, "-", None, 1), Literal(123)),
+        #     Token(TokenType.STAR, "*", None, 1),
+        #     Grouping(Literal(45.67)))
+        # print(AstPrinter.AstPrinter().print_ast(expression))
+
+        # Parsing
         parser = Parser.Parser(self, tokens)
         expression = parser.parse()
-
+        #
         # Stop if there was a syntax error.
         if self.had_error:
             return
-        print(AstPrinter.AstPrinter().print_ast(expression))
 
         interpreter = Interpreter.Interpreter()
         interpreter.interpret(expression)
@@ -61,7 +72,7 @@ class Lox:
 
     # static method
     def report(self, line, where, message):
-        print "[line " + line + "] Error" + where + ": " + message
+        print "[line " + str(line) + "] Error" + where + ": " + message
         self.had_error = True
 
     # static method
