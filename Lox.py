@@ -6,6 +6,8 @@ import Parser
 import AstPrinter
 import Interpreter
 
+import LoxRuntimeError
+
 from grammar import Binary
 from grammar import Unary
 from grammar import Literal

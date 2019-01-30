@@ -2,9 +2,13 @@ import grammar
 # from Token import Token
 from TokenType import TokenType
 
+# program     -> declaration* EOF ;
+# 
+# declaration -> varDecl
+#             | statement ;
+# 
 
-# program   -> statement* EOF ;
-#
+
 # statement -> exprStmt
 #           | printStmt ;
 #
@@ -41,7 +45,7 @@ class Parser:
         statements = []
         while not self._is_at_end():
             try:
-                statements.append(self._statement())
+                statements.append(self._declaration())
             except ParseError as error:
                 return None
         return statements
@@ -97,6 +101,15 @@ class Parser:
         self._consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return grammar.Print(value)
 
+    def var_declaration(self):
+        name = self._consume(TokenType.IDENTIFIER, "Expect variable name.")
+        initializer = None
+        if self._match(TokenType.EQUAL):
+            initializer = self._expression()
+
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Var(name, initializer)
+
     def _expression_statement(self):
         expr = self._expression()
         self._consume(TokenType.SEMICOLON, "Expect ';' after expression.");
@@ -109,6 +122,20 @@ class Parser:
         """
         expr = self._equality()
         return expr
+
+    def _declaration(self):
+        """
+        Matches based on the rule:
+        declaration -> varDecl
+            | statement ;
+        """
+        try:
+            if self._match(TokenType.VAR):
+                return self.var_declaration()
+            return self._statement()
+        except ParseError:
+            self._synchronize()
+            return None
 
     def _equality(self):
         """Matches based on the rule:
@@ -184,6 +211,9 @@ class Parser:
 
         elif self._match(TokenType.NUMBER, TokenType.STRING):
             return grammar.Literal(self._previous().literal)
+
+        elif self._match(TokenType.IDENTIFIER):
+            return grammar.Variable(self._previous())
 
         elif self._match(TokenType.LEFT_PAREN):
             expr = self._expression()

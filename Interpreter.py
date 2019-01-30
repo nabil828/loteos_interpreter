@@ -1,13 +1,8 @@
 import numbers
 from TokenType import TokenType
 import Lox
-
-
-class LoxRuntimeError(Exception):
-    """Raise when the Lox interpreter encounters a runtime error."""
-    def __init__(self, token, message):
-        self.message = message
-        self.token = token
+from Enviroment import Environment
+import LoxRuntimeError
 
 
 def _stringify(obj):
@@ -60,16 +55,15 @@ def _check_number_operands(operator, left, right):
 
 
 class Interpreter:
-
     def __init__(self):
-        pass
+        self.globals = Environment()
 
     def interpret(self, statements):
         try:
             for statement in statements:
                 self._execute(statement)
-        except LoxRuntimeError as error:
-            Lox.Lox().runtime_error(error)
+        except LoxRuntimeError:
+            Lox.Lox().runtime_error(LoxRuntimeError)
 
     def _evaluate(self, expr):
         return expr.accept(self)
@@ -77,12 +71,20 @@ class Interpreter:
     def _execute(self, stmt):
         return stmt.accept(self)
 
-    def visit_expression_stmt(self,  stmt):
+    def visit_expression(self,  stmt):
         self._evaluate(stmt.expression)
 
-    def visit_print_stmt(self,  stmt):
+    def visit_print(self,  stmt):
         value = self._evaluate(stmt.expression)
         print(_stringify(value))
+
+    def visit_var(self, stmt):  # of type : Stmt.Var
+        value = None
+        if stmt.initializer is not None:  #??
+            value = self._evaluate(stmt.initializer)
+
+        self.globals.define(stmt.name.lexeme, value)
+        return None
 
     def visit_literal(self, expr):
         return expr.value
@@ -102,6 +104,9 @@ class Interpreter:
             return _is_truthy(right)
 
         return None
+
+    def visit_variable(self, expr):  # of type : Expr.Variable
+        return self.globals.get(expr.name)
 
     def visit_binary(self, expr):
         left = self._evaluate(expr.left)

@@ -5,18 +5,6 @@ class Expr:
     pass
 
 
-class Unary(Expr):
-    def __init__(self, operator, right):
-        assert isinstance(operator, Scanner.Token)
-        assert isinstance(right, Expr)
-
-        self.operator = operator
-        self.right = right
-
-    def accept(self, visitor):
-        return visitor.visitUnary(self)
-
-
 class Binary(Expr):
     def __init__(self, left, operator, right):
         assert isinstance(left, Expr)
@@ -31,6 +19,30 @@ class Binary(Expr):
         return visitor.visit_binary(self)
 
 
+class Chain(Expr):
+    def __init__(self, left, right):
+        assert isinstance(left, Expr)
+        assert isinstance(right, Expr)
+
+        self.left = left
+        self.right = right
+
+    def accept(self, visitor):
+        return visitor.visit_chain(self)
+
+
+class Unary(Expr):
+    def __init__(self, operator, right):
+        assert isinstance(operator, Scanner.Token)
+        assert isinstance(right, Expr)
+
+        self.operator = operator
+        self.right = right
+
+    def accept(self, visitor):
+        return visitor.visit_unary(self)
+
+
 class Literal(Expr):
     def __init__(self, value):
         assert isinstance(value, object)
@@ -41,16 +53,14 @@ class Literal(Expr):
         return visitor.visit_literal(self)
 
 
-class Chain(Expr):
-    def __init__(self, left, right):
-        assert isinstance(left, Expr)
-        assert isinstance(right, Expr)
+class Variable(Expr):
+    def __init__(self, name):
+        assert isinstance(name, Scanner.Token)
 
-        self.left = left
-        self.right = right
+        self.name = name
 
     def accept(self, visitor):
-        return visitor.visitChain(self)
+        return visitor.visit_variable(self)
 
 
 class Grouping(Expr):
@@ -60,7 +70,9 @@ class Grouping(Expr):
         self.expression = expression
 
     def accept(self, visitor):
-        return visitor.visitGrouping(self)
+        return visitor.visit_grouping(self)
+
+import Scanner
 
 
 class Stmt:
@@ -74,7 +86,19 @@ class Print(Stmt):
         self.expression = expression
 
     def accept(self, visitor):
-        return visitor.visit_print_stmt(self)
+        return visitor.visit_print(self)
+
+
+class Var(Stmt):
+    def __init__(self, name, initializer):
+        assert isinstance(name, Scanner.Token)
+        assert isinstance(initializer, Expr)
+
+        self.name = name
+        self.initializer = initializer
+
+    def accept(self, visitor):
+        return visitor.visit_var(self)
 
 
 class Expression(Stmt):
@@ -84,5 +108,5 @@ class Expression(Stmt):
         self.expression = expression
 
     def accept(self, visitor):
-        return visitor.visit_expression_stmt(self)
+        return visitor.visit_expression(self)
 

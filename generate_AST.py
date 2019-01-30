@@ -7,21 +7,23 @@ tab = "    " # Tab is four spaces
 base_desc = {
     "Expr": {
         "Chain": [["Expr", "left"], ["Expr", "right"]],
-        "Unary": [["scanner.Token", "operator"], ["Expr", "right"]],
-        "Binary": [["Expr", "left"], ["scanner.Token", "operator"], ["Expr", "right"]],
+        "Unary": [["Scanner.Token", "operator"], ["Expr", "right"]],
+        "Binary": [["Expr", "left"], ["Scanner.Token", "operator"], ["Expr", "right"]],
         "Grouping": [["Expr", "expression"]],
-        "Literal": [["object", "value"]]
+        "Literal": [["object", "value"]],
+        "Variable" : [["Scanner.Token", "name"]]
     },
     "Stmt": {
         "Expression": [["Expr", "expression"]],
-        "Print": [["Expr", "expression"]]
+        "Print": [["Expr", "expression"]],
+        "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]]
     }
 }
 
 
 def define_ast(con, base_name, types):
     """Generate the AST structure classes for the 'base_name' root."""
-    con.write("import scanner\n\n\n")
+    con.write("import Scanner\n\n\n")
     con.writelines(["class " + base_name + ":\n",
                     tab + "pass\n\n"])
     for expr_type, expr in types.items():
@@ -52,7 +54,7 @@ def define_type(con, base_name, class_name, fields):
     con.writelines(var_stmts)
     con.write("\n")
     con.writelines([tab + "def accept(self, visitor):\n",
-                    tab + tab + "return visitor.visit" + class_name + "(self)\n\n"])
+                    tab + tab + "return visitor.visit_" + class_name.lower() + "(self)\n\n"])
 
 
 if __name__ == "__main__":
