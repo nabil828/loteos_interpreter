@@ -17,7 +17,8 @@ base_desc = {
     "Stmt": {
         "Expression": [["Expr", "expression"]],
         "Print": [["Expr", "expression"]],
-        "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]]
+        "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]],
+        "Block": [["Stmt", "statements"]]
     }
 }
 

@@ -71,6 +71,19 @@ class Interpreter:
     def _execute(self, stmt):
         return stmt.accept(self)
 
+    def _execute_block(self, statements, environment):
+        previous = self.globals
+        try:
+            self.globals = environment
+            for statement in statements:
+                self._execute(statement)
+        finally:
+            self.globals = previous
+
+    def visit_block(self, stmt): # of type : Block
+        self._execute_block(stmt.statements, Environment(self.globals))
+        return None
+
     def visit_expression(self,  stmt):
         self._evaluate(stmt.expression)
 

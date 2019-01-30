@@ -122,3 +122,13 @@ class Expression(Stmt):
     def accept(self, visitor):
         return visitor.visit_expression(self)
 
+
+class Block(Stmt):
+    def __init__(self, statements):
+        assert isinstance(statements, list)
+
+        self.statements = statements
+
+    def accept(self, visitor):
+        return visitor.visit_block(self)
+

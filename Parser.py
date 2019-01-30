@@ -10,7 +10,10 @@ from TokenType import TokenType
 
 
 # statement -> exprStmt
-#           | printStmt ;
+#           | printStmt
+#           | block ;
+#
+# block     -> "{" declaration* "}" ;
 #
 # exprStmt  -> expression ";" ;
 # printStmt -> "print" expression ";" ;
@@ -92,11 +95,14 @@ class Parser:
     def _statement(self):
         """Matches based on the rule:
         statement -> exprStmt
-#           | printStmt ;"""
+          | printStmt
+          | block ;"""
         if self._match(TokenType.PRINT):
             return self._print_statement()
-
-        return self._expression_statement()
+        elif self._match(TokenType.LEFT_BRACE):
+            return grammar.Block(self._block_statement())
+        else:
+            return self._expression_statement()
 
     def _print_statement(self):
         value = self._expression()
@@ -116,6 +122,14 @@ class Parser:
         expr = self._expression()
         self._consume(TokenType.SEMICOLON, "Expect ';' after expression.");
         return grammar.Expression(expr)
+
+    def _block_statement(self):
+        statements = []
+        while not self._check(TokenType.RIGHT_BRACE) and not self._is_at_end():
+            statements.append(self._declaration())
+
+        self._consume(TokenType.RIGHT_BRACE, "Except '}' after block.")
+        return statements
 
     def _assignment(self):
         expr = self._equality()
