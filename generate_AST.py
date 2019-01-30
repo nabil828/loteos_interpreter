@@ -21,7 +21,8 @@ base_desc = {
         "Print": [["Expr", "expression"]],
         "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]],
         "Block": [["Stmt", "statements"]],
-        "If": [["Expr", "condition"], ["Stmt", "then_branch"], ["Stmt", "else_branch"]]
+        "If": [["Expr", "condition"], ["Stmt", "then_branch"], ["Stmt", "else_branch"]],
+        "While": [["Expr", "condition"], ["Stmt", "body"]]
     }
 }
 

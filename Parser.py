@@ -10,9 +10,17 @@ from TokenType import TokenType
 
 
 # statement -> exprStmt
+#           | forStmt
 #           | ifStmt
 #           | printStmt
+#           | whileStmt
 #           | block ;
+#
+# forStmt   -> "for" "(" ( varDecl | exprStmt | ";" )
+#                       expression? ";"
+#                       expression? ")" statement ;
+#
+# whileStmt -> "while" "(" expression ")" statement ;
 #
 # ifStmt    -> "if" "(" expression ")" statement ( "else" statement )? ;
 #
@@ -109,6 +117,10 @@ class Parser:
             return grammar.Block(self._block_statement())
         elif self._match(TokenType.IF):
             return self._if_statement()
+        elif self._match(TokenType.WHILE):
+            return self._while_statement()
+        elif self._match(TokenType.FOR):
+            return self._for_statement()
         else:
             return self._expression_statement()
 
@@ -123,6 +135,49 @@ class Parser:
             _else_branch = self._statement()
 
         return grammar.If(condition, _the_branch, _else_branch)
+
+    def _while_statement(self):
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after 'while'.")
+        condition = self._expression()
+        self._consume(TokenType.RIGHT_PAREN, "Except ') after condition.")
+        body = self._statement()
+
+        return grammar.While(condition, body)
+
+    def _for_statement(self):
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after 'for'.")
+
+        if self._match(TokenType.SEMICOLON):
+            initializer = None
+        elif self._match(TokenType.VAR):
+            initializer = self.varDeclaration()
+        else:
+            initializer = self.expressionStatement()
+
+        condition = None
+        if not self._check(TokenType.SEMICOLON):
+            condition = self.expression()
+        self._consume(TokenType.SEMICOLON, "Except ';' after loop condition.")
+
+        increment = None
+        if not self._check(TokenType.RIGHT_PAREN):
+            increment = self._expression()
+        self._consume(TokenType.RIGHT_PAREN, "Excpet ';' after for caluses.")
+
+        body = self.statement()
+
+        if increment is not None:
+            body = grammar.Block([body, grammar.Expr(increment)])
+
+        if condition is None:
+            condition = grammar.Literal(True)
+
+        body = grammar.While(condition, body)
+
+        if initializer is not None:
+            body = grammar.Block([initializer, body])
+
+        return body
 
     def _print_statement(self):
         value = self._expression()

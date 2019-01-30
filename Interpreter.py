@@ -106,6 +106,12 @@ class Interpreter:
         self.globals.define(stmt.name.lexeme, value)
         return None
 
+    def visit_while(self, stmt):
+        while _is_truthy(self._evaluate(stmt.condition)):
+            self._execute(stmt.body)
+
+        return None
+
     def visit_assign(self, expr):  # of type Expr.Assign
         value = self._evaluate(expr.value)
 

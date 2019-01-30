@@ -105,16 +105,6 @@ class Stmt:
     pass
 
 
-class Print(Stmt):
-    def __init__(self, expression):
-        assert isinstance(expression, Expr)
-
-        self.expression = expression
-
-    def accept(self, visitor):
-        return visitor.visit_print(self)
-
-
 class Var(Stmt):
     def __init__(self, name, initializer):
         assert isinstance(name, Scanner.Token)
@@ -125,6 +115,28 @@ class Var(Stmt):
 
     def accept(self, visitor):
         return visitor.visit_var(self)
+
+
+class While(Stmt):
+    def __init__(self, condition, body):
+        assert isinstance(condition, Expr)
+        assert isinstance(body, Stmt)
+
+        self.condition = condition
+        self.body = body
+
+    def accept(self, visitor):
+        return visitor.visit_while(self)
+
+
+class Print(Stmt):
+    def __init__(self, expression):
+        assert isinstance(expression, Expr)
+
+        self.expression = expression
+
+    def accept(self, visitor):
+        return visitor.visit_print(self)
 
 
 class Expression(Stmt):
@@ -139,7 +151,7 @@ class Expression(Stmt):
 
 class Block(Stmt):
     def __init__(self, statements):
-        assert isinstance(statements, Stmt)
+        assert isinstance(statements, list)
 
         self.statements = statements
 
@@ -151,8 +163,7 @@ class If(Stmt):
     def __init__(self, condition, then_branch, else_branch):
         assert isinstance(condition, Expr)
         assert isinstance(then_branch, Stmt)
-        if else_branch is not None:
-            assert isinstance(else_branch, Stmt)
+        assert isinstance(else_branch, Stmt)
 
         self.condition = condition
         self.then_branch = then_branch
