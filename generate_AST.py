@@ -11,6 +11,10 @@ base_desc = {
         "Binary": [["Expr", "left"], ["scanner.Token", "operator"], ["Expr", "right"]],
         "Grouping": [["Expr", "expression"]],
         "Literal": [["object", "value"]]
+    },
+    "Stmt": {
+        "Expression": [["Expr", "expression"]],
+        "Print": [["Expr", "expression"]]
     }
 }
 
@@ -55,3 +59,4 @@ if __name__ == "__main__":
     path = "grammar.py"
     with open(path, "w+") as con:
         define_ast(con, "Expr", base_desc["Expr"])
+        define_ast(con, "Stmt", base_desc["Stmt"])

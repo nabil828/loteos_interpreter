@@ -2,6 +2,7 @@ import numbers
 from TokenType import TokenType
 import Lox
 
+
 class LoxRuntimeError(Exception):
     """Raise when the Lox interpreter encounters a runtime error."""
     def __init__(self, token, message):
@@ -63,15 +64,25 @@ class Interpreter:
     def __init__(self):
         pass
 
-    def interpret(self, expression):
+    def interpret(self, statements):
         try:
-            value = self._evaluate(expression)
-            print(_stringify(value))
+            for statement in statements:
+                self._execute(statement)
         except LoxRuntimeError as error:
             Lox.Lox().runtime_error(error)
 
     def _evaluate(self, expr):
         return expr.accept(self)
+
+    def _execute(self, stmt):
+        return stmt.accept(self)
+
+    def visit_expression_stmt(self,  stmt):
+        self._evaluate(stmt.expression)
+
+    def visit_print_stmt(self,  stmt):
+        value = self._evaluate(stmt.expression)
+        print(_stringify(value))
 
     def visit_literal(self, expr):
         return expr.value

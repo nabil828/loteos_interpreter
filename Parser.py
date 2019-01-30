@@ -3,6 +3,15 @@ import grammar
 from TokenType import TokenType
 
 
+# program   -> statement* EOF ;
+#
+# statement -> exprStmt
+#           | printStmt ;
+#
+# exprStmt  -> expression ";" ;
+# printStmt -> "print" expression ";" ;
+
+
 # expression     -> equality ;
 # equality       -> comparison ( ( "!=" | "==" ) comparison )* ;
 # comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
@@ -29,10 +38,13 @@ class Parser:
         self.token_list = token_list
 
     def parse(self):
-        try:
-            return self._expression()
-        except ParseError as error:
-            return None
+        statements = []
+        while not self._is_at_end():
+            try:
+                statements.append(self._statement())
+            except ParseError as error:
+                return None
+        return statements
 
     def _match(self, *token_types):
         """Looks ahead one token. If the next token matches one of the
@@ -71,21 +83,32 @@ class Parser:
         """Returns the previous token in the list."""
         return self.token_list[self._current - 1]
 
-    def _expression(self):
-        """Matches based on the rule:
-        expression -> statement (, statement)*"""
-        expr = self._statement()
-
-        while self._match(TokenType.COMMA):
-            right = self._statement()
-            expr = grammar.Chain(expr, right)
-
-        return expr
-
     def _statement(self):
         """Matches based on the rule:
-        statement -> equality"""
-        return self._equality()
+        statement -> exprStmt
+#           | printStmt ;"""
+        if self._match(TokenType.PRINT):
+            return self._print_statement()
+
+        return self._expression_statement()
+
+    def _print_statement(self):
+        value = self._expression()
+        self._consume(TokenType.SEMICOLON, "Expect ';' after value.")
+        return grammar.Print(value)
+
+    def _expression_statement(self):
+        expr = self._expression()
+        self._consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+        return grammar.Expression(expr)
+
+    def _expression(self):
+        """
+        Matches based on the rule:
+        expression -> equality
+        """
+        expr = self._equality()
+        return expr
 
     def _equality(self):
         """Matches based on the rule:

@@ -14,7 +14,7 @@ class Unary(Expr):
         self.right = right
 
     def accept(self, visitor):
-        return visitor.visit_unary(self)
+        return visitor.visitUnary(self)
 
 
 class Binary(Expr):
@@ -50,7 +50,7 @@ class Chain(Expr):
         self.right = right
 
     def accept(self, visitor):
-        return visitor.visit_chain(self)
+        return visitor.visitChain(self)
 
 
 class Grouping(Expr):
@@ -60,4 +60,29 @@ class Grouping(Expr):
         self.expression = expression
 
     def accept(self, visitor):
-        return visitor.visit_grouping(self)
+        return visitor.visitGrouping(self)
+
+
+class Stmt:
+    pass
+
+
+class Print(Stmt):
+    def __init__(self, expression):
+        assert isinstance(expression, Expr)
+
+        self.expression = expression
+
+    def accept(self, visitor):
+        return visitor.visit_print_stmt(self)
+
+
+class Expression(Stmt):
+    def __init__(self, expression):
+        assert isinstance(expression, Expr)
+
+        self.expression = expression
+
+    def accept(self, visitor):
+        return visitor.visit_expression_stmt(self)
+

@@ -34,9 +34,9 @@ class Lox:
         # scanning
         obj = Scanner.Scanner(source)
         tokens = obj.scan_tokens()
-        #
-        for token in tokens:
-            print token
+
+        # for token in tokens:
+        #     print token
 
         # Semi parsing: representing code
         # expression = Binary(
@@ -47,14 +47,14 @@ class Lox:
 
         # Parsing
         parser = Parser.Parser(self, tokens)
-        expression = parser.parse()
+        statements = parser.parse()
         #
         # Stop if there was a syntax error.
         if self.had_error:
             return
 
         interpreter = Interpreter.Interpreter()
-        interpreter.interpret(expression)
+        interpreter.interpret(statements)
 
     def runtime_error(self, error):
         print(error.message, "\n[line ", error.token.line, "]")
