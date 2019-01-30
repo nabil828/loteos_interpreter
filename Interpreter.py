@@ -2,7 +2,10 @@ import numbers
 from TokenType import TokenType
 import Lox
 from Enviroment import Environment
-import LoxRuntimeError
+from LoxRuntimeError import LoxRuntimeError
+from LoxCallable import LoxCallable
+from LoxFunction import LoxFunction
+from Return import Return
 
 
 def _stringify(obj):
@@ -57,6 +60,14 @@ def _check_number_operands(operator, left, right):
 class Interpreter:
     def __init__(self):
         self.globals = Environment()
+        self.current_environment = self.globals
+
+        # Anonymous objects in Python
+        # anon = type('',(object,),{})()
+        # http://www.hydrogen18.com/blog/python-anonymous-objects.html
+        # self.globals.define("clock", type('AnonymousClass', (LoxCallable,),
+        #                                   {'arity': lambda self: 0,
+        #                                    'call': lambda self, interpreter, arguments: time.clock()})())
 
     def interpret(self, statements):
         try:
@@ -87,16 +98,27 @@ class Interpreter:
     def visit_expression(self,  stmt):
         self._evaluate(stmt.expression)
 
+    def visit_function(self, stmt): #stmt: Stmt.Function
+        function_ = LoxFunction(stmt, self.current_environment)
+        self.current_environment.define(stmt.name.lexeme, function_)
+        return None
+
     def visit_if(self, stmt):
         if _is_truthy(self._evaluate(stmt.condition)):
             self._execute(stmt.then_branch)
-        elif stmt.elseBranch is not None:
+        elif stmt.else_branch is not None:
             self._execute(self._evaluate(stmt.else_branch))
         return None
 
     def visit_print(self,  stmt):
         value = self._evaluate(stmt.expression)
         print(_stringify(value))
+
+    def visit_return(self, stmt):
+        value = None
+        if stmt.value is not None:
+            value = self._evaluate(stmt.value)
+        raise Return(value)
 
     def visit_var(self, stmt):  # of type : Stmt.Var
         value = None
@@ -196,3 +218,19 @@ class Interpreter:
             return float(left) * float(right)
 
         return None
+
+    def visit_call(self, expr):
+        callee = self._evaluate(expr.callee)
+
+        arguments = []
+        for argument in expr.arguments:
+            arguments.append(self._evaluate(argument))
+
+        if not isinstance(callee, LoxCallable):
+            raise LoxRuntimeError(expr.paren, "Can only call function and classes.")
+
+        function = callee
+        if len(arguments) != function.arity():
+            raise LoxRuntimeError(expr.paren, "Expected" + str(function.arity()) + "arguments but got {len(arguments)} .")
+
+        return function.call(self, arguments)

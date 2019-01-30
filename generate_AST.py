@@ -14,16 +14,19 @@ base_desc = {
         "Variable": [["Scanner.Token", "name"]],
         "Assign": [["Scanner.Token", "name"], ["Expr", "value"]],
         "Logical": [["Expr", "left"], ["Scanner.Token", "operator"], ["Expr", "right"]],
-
-    },
+        "Call": [["Expr", "callee"], ["Scanner.Token", "paren"], ["Expr", "arguments"]]
+            },
     "Stmt": {
         "Expression": [["Expr", "expression"]],
         "Print": [["Expr", "expression"]],
         "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]],
         "Block": [["Stmt", "statements"]],
         "If": [["Expr", "condition"], ["Stmt", "then_branch"], ["Stmt", "else_branch"]],
-        "While": [["Expr", "condition"], ["Stmt", "body"]]
-    }
+        "While": [["Expr", "condition"], ["Stmt", "body"]],
+        "Function": [["Scanner.Token", "name"], ["Scanner.Token", "params"], ["Stmt", "body"]],
+        "Return": [["Scanner.Token", "keyword"], ["Expr", "value"]]
+
+}
 }
 
 

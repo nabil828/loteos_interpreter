@@ -1,4 +1,4 @@
-from  LoxRuntimeError import LoxRuntimeError
+from LoxRuntimeError import LoxRuntimeError
 
 
 class Environment:

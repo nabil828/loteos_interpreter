@@ -41,6 +41,20 @@ class Literal(Expr):
         return visitor.visit_literal(self)
 
 
+class Call(Expr):
+    def __init__(self, callee, paren, arguments):
+        assert isinstance(callee, Expr)
+        assert isinstance(paren, Scanner.Token)
+        # assert isinstance(arguments, Expr)
+
+        self.callee = callee
+        self.paren = paren
+        self.arguments = arguments
+
+    def accept(self, visitor):
+        return visitor.visit_call(self)
+
+
 class Chain(Expr):
     def __init__(self, left, right):
         assert isinstance(left, Expr)
@@ -98,11 +112,23 @@ class Grouping(Expr):
     def accept(self, visitor):
         return visitor.visit_grouping(self)
 
-import Scanner
-
 
 class Stmt:
     pass
+
+
+class Function(Stmt):
+    def __init__(self, name, params, body):
+        assert isinstance(name, Scanner.Token)
+        # assert isinstance(params, Scanner.Token)
+        # assert isinstance(body, Stmt)
+
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def accept(self, visitor):
+        return visitor.visit_function(self)
 
 
 class Var(Stmt):
@@ -129,6 +155,18 @@ class While(Stmt):
         return visitor.visit_while(self)
 
 
+class Return(Stmt):
+    def __init__(self, keyword, value):
+        assert isinstance(keyword, Scanner.Token)
+        assert isinstance(value, Expr)
+
+        self.keyword = keyword
+        self.value = value
+
+    def accept(self, visitor):
+        return visitor.visit_return(self)
+
+
 class Print(Stmt):
     def __init__(self, expression):
         assert isinstance(expression, Expr)
@@ -150,7 +188,7 @@ class Expression(Stmt):
 
 
 class Block(Stmt):
-    def __init__(self, statements):
+    def __init__(self, statements=""):
         assert isinstance(statements, list)
 
         self.statements = statements
@@ -163,7 +201,7 @@ class If(Stmt):
     def __init__(self, condition, then_branch, else_branch):
         assert isinstance(condition, Expr)
         assert isinstance(then_branch, Stmt)
-        assert isinstance(else_branch, Stmt)
+        # assert isinstance(else_branch, Stmt)
 
         self.condition = condition
         self.then_branch = then_branch

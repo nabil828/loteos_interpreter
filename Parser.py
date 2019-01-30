@@ -4,17 +4,24 @@ from TokenType import TokenType
 
 # program     -> declaration* EOF ;
 # 
-# declaration -> varDecl
+# declaration -> funDecl
+#             | varDecl
 #             | statement ;
 # 
+# funDecl  -> "fun" function ;
+# function -> IDENTIFIER "(" parameters? ")" block ;
+# parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
 
 
-# statement -> exprStmt
-#           | forStmt
-#           | ifStmt
-#           | printStmt
-#           | whileStmt
-#           | block ;
+# statement  -> exprStmt
+#            | forStmt
+#            | ifStmt
+#            | printStmt
+#            | returnStmt
+#            | whileStmt
+#            | block ;
+# returnStmt -> "return" expression? ";" ;
+
 #
 # forStmt   -> "for" "(" ( varDecl | exprStmt | ";" )
 #                       expression? ";"
@@ -40,7 +47,11 @@ from TokenType import TokenType
 # comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 # addition       -> multiplication ( ( "-" | "+" ) multiplication )* ;
 # multiplication -> unary ( ( "/" | "*" ) unary )* ;
-# unary          -> ( "!" | "-" ) unary
+
+# unary -> ( "!" | "-" ) unary | call ;
+# call  -> primary ( "(" arguments? ")" )* ;
+# arguments -> expression ( "," expression )* ;
+
 #                | primary ;
 # primary        -> NUMBER | STRING | "false" | "true" | "nil"
 #                | "(" expression ")" ;
@@ -121,6 +132,8 @@ class Parser:
             return self._while_statement()
         elif self._match(TokenType.FOR):
             return self._for_statement()
+        elif self._match(TokenType.RETURN):
+            return self._return_statement()
         else:
             return self._expression_statement()
 
@@ -150,13 +163,13 @@ class Parser:
         if self._match(TokenType.SEMICOLON):
             initializer = None
         elif self._match(TokenType.VAR):
-            initializer = self.varDeclaration()
+            initializer = self._var_declaration()
         else:
-            initializer = self.expressionStatement()
+            initializer = self._expression_statement()
 
         condition = None
         if not self._check(TokenType.SEMICOLON):
-            condition = self.expression()
+            condition = self._expression()
         self._consume(TokenType.SEMICOLON, "Except ';' after loop condition.")
 
         increment = None
@@ -164,10 +177,10 @@ class Parser:
             increment = self._expression()
         self._consume(TokenType.RIGHT_PAREN, "Excpet ';' after for caluses.")
 
-        body = self.statement()
+        body = self._statement()
 
         if increment is not None:
-            body = grammar.Block([body, grammar.Expr(increment)])
+            body = grammar.Block([body, increment])
 
         if condition is None:
             condition = grammar.Literal(True)
@@ -184,7 +197,16 @@ class Parser:
         self._consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return grammar.Print(value)
 
-    def var_declaration(self):
+    def _return_statement(self):
+        keyword = self._previous()
+        value = None
+        if not self._check(TokenType.SEMICOLON):
+            value = self._expression()
+
+        self._consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+        return grammar.Return(keyword, value)
+
+    def _var_declaration(self):
         name = self._consume(TokenType.IDENTIFIER, "Expect variable name.")
         initializer = None
         if self._match(TokenType.EQUAL):
@@ -248,16 +270,41 @@ class Parser:
         expr = self._assignment()
         return expr
 
+    def _function(self, kind) :
+        """
+              Matches based on the rule:
+              # function -> IDENTIFIER "(" parameters? ")" block ;
+        """
+        name = self._consume(TokenType.IDENTIFIER, "Expect '(' after " + kind + " name.")
+        self._consume(TokenType.LEFT_PAREN, "Expect '(' after " + kind + " name.")
+        parameters = []
+        if not self._check(TokenType.RIGHT_PAREN):
+            while True:
+                if len(parameters) >= 8:
+                    self._error(self._peek(), "Cannot have more than 8 parameters.")
+                parameters.append(self._consume(TokenType.IDENTIFIER, "Except parameter name."))
+                if not self._match(TokenType.COMMA):
+                    break
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after parameters.")
+
+        self._consume(TokenType.LEFT_BRACE, "Expect '{{' before {} body.".format(kind))
+        body = self._block_statement()
+        return grammar.Function(name, parameters, body)
+
     def _declaration(self):
         """
         Matches based on the rule:
-        declaration -> varDecl
-            | statement ;
+        # declaration -> funDecl
+        #             | varDecl
+        #             | statement ;
         """
         try:
             if self._match(TokenType.VAR):
-                return self.var_declaration()
-            return self._statement()
+                return self._var_declaration()
+            elif self._match(TokenType.FUN):
+                return self._function("function")
+            else:
+                return self._statement()
         except ParseError:
             self._synchronize()
             return None
@@ -316,15 +363,41 @@ class Parser:
         return expr
 
     def _unary(self):
-        """Matches based on the rule:
-        unary -> ( ! | - ) unary
-               | primary"""
+        """
+        Matches based on the rule:
+        unary -> ( "!" | "-" ) unary | call ;
+        """
         if self._match(TokenType.BANG, TokenType.MINUS):
             operator = self._previous()
             right = self._unary()
             return grammar.Unary(operator, right)
 
-        return self._primary()
+        return self._call()
+
+    def _call(self):
+        """
+        Matches based on the rule:
+        call  -> primary ( "(" arguments? ")" )* ;
+        """
+        expr = self._primary()
+
+        while True:
+            if self._match(TokenType.LEFT_PAREN):
+                expr = self._finish_call(expr)
+            else:
+                break
+        return expr
+
+    def _finish_call(self, callee):
+        arguments = []
+        if not self._check(TokenType.RIGHT_PAREN):
+            arguments.append(self._expression())
+            while self._match(TokenType.COMMA):
+                if len(arguments) >= 8:
+                    self._error(self._peek(), "Cannot have more than 8 arguments.")
+                arguments.append(self._expression())
+        paren = self._consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+        return grammar.Call(callee, paren, arguments)
 
     def _primary(self):
         if self._match(TokenType.FALSE):
