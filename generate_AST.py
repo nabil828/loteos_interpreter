@@ -11,7 +11,8 @@ base_desc = {
         "Binary": [["Expr", "left"], ["Scanner.Token", "operator"], ["Expr", "right"]],
         "Grouping": [["Expr", "expression"]],
         "Literal": [["object", "value"]],
-        "Variable" : [["Scanner.Token", "name"]]
+        "Variable": [["Scanner.Token", "name"]],
+        "Assign": [["Scanner.Token", "name"], ["Expr", "value"]]
     },
     "Stmt": {
         "Expression": [["Expr", "expression"]],

@@ -16,7 +16,9 @@ from TokenType import TokenType
 # printStmt -> "print" expression ";" ;
 
 
-# expression     -> equality ;
+# expression -> assignment ;
+# assignment -> IDENTIFIER "=" assignment
+#            | equality ;
 # equality       -> comparison ( ( "!=" | "==" ) comparison )* ;
 # comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 # addition       -> multiplication ( ( "-" | "+" ) multiplication )* ;
@@ -115,12 +117,26 @@ class Parser:
         self._consume(TokenType.SEMICOLON, "Expect ';' after expression.");
         return grammar.Expression(expr)
 
+    def _assignment(self):
+        expr = self._equality()
+
+        if self._match(TokenType.EQUAL):
+            equals = self._previous()
+            value = self._assignment()
+
+            if isinstance(expr, grammar.Variable):
+                name = expr.name
+                return grammar.Assign(name, value)
+            self.error(equals, "Invalid assignment target.")
+
+        return expr
+
     def _expression(self):
         """
         Matches based on the rule:
         expression -> equality
         """
-        expr = self._equality()
+        expr = self._assignment()
         return expr
 
     def _declaration(self):

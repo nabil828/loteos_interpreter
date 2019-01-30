@@ -63,6 +63,18 @@ class Variable(Expr):
         return visitor.visit_variable(self)
 
 
+class Assign(Expr):
+    def __init__(self, name, value):
+        assert isinstance(name, Scanner.Token)
+        assert isinstance(value, Expr)
+
+        self.name = name
+        self.value = value
+
+    def accept(self, visitor):
+        return visitor.visit_assign(self)
+
+
 class Grouping(Expr):
     def __init__(self, expression):
         assert isinstance(expression, Expr)

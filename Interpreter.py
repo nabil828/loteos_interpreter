@@ -86,6 +86,12 @@ class Interpreter:
         self.globals.define(stmt.name.lexeme, value)
         return None
 
+    def visit_assign(self, expr):  # of type Expr.Assign
+        value = self._evaluate(expr.value)
+
+        self.globals.assign(expr.name, value)
+        return value
+
     def visit_literal(self, expr):
         return expr.value
 

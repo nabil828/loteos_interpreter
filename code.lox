@@ -1,3 +1,4 @@
-print "one"; print 13213;
-print true;
-print 2 + 1;
+var a = 1;
+a=3;
+print a;
+print "a: " + "23"; // "2".
