@@ -10,18 +10,24 @@ from TokenType import TokenType
 
 
 # statement -> exprStmt
+#           | ifStmt
 #           | printStmt
 #           | block ;
+#
+# ifStmt    -> "if" "(" expression ")" statement ( "else" statement )? ;
 #
 # block     -> "{" declaration* "}" ;
 #
 # exprStmt  -> expression ";" ;
-# printStmt -> "print" expression ";" ;
+# printStmt -> "print" expression "
 
 
 # expression -> assignment ;
-# assignment -> IDENTIFIER "=" assignment
-#            | equality ;
+# assignment -> identifier "=" assignment
+#            | logic_or ;
+# logic_or   -> logic_and ( "or" logic_and )* ;
+# logic_and  -> equality ( "and" equality )* ;
+
 # equality       -> comparison ( ( "!=" | "==" ) comparison )* ;
 # comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 # addition       -> multiplication ( ( "-" | "+" ) multiplication )* ;
@@ -101,8 +107,22 @@ class Parser:
             return self._print_statement()
         elif self._match(TokenType.LEFT_BRACE):
             return grammar.Block(self._block_statement())
+        elif self._match(TokenType.IF):
+            return self._if_statement()
         else:
             return self._expression_statement()
+
+    def _if_statement(self):
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after if.")
+        condition = self._expression()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after if conditon.")
+
+        _the_branch = self._statement()
+        _else_branch = None
+        if self._match(TokenType.ELSE):
+            _else_branch = self._statement()
+
+        return grammar.If(condition, _the_branch, _else_branch)
 
     def _print_statement(self):
         value = self._expression()
@@ -132,7 +152,7 @@ class Parser:
         return statements
 
     def _assignment(self):
-        expr = self._equality()
+        expr = self._or()
 
         if self._match(TokenType.EQUAL):
             equals = self._previous()
@@ -142,6 +162,26 @@ class Parser:
                 name = expr.name
                 return grammar.Assign(name, value)
             self.error(equals, "Invalid assignment target.")
+
+        return expr
+
+    def _or(self):
+        expr = self._and()
+
+        while self._match(TokenType.OR):
+            operator = self._previous()
+            right = self._and()
+            expr = grammar.Logical(expr, operator, right)
+
+        return expr
+
+    def _and(self):
+        expr = self._equality()
+
+        while self._match(TokenType.AND):
+            operator = self._previous()
+            right = self._equality()
+            expr = grammar.Logical(expr, operator, right)
 
         return expr
 

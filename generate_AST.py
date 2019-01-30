@@ -12,13 +12,16 @@ base_desc = {
         "Grouping": [["Expr", "expression"]],
         "Literal": [["object", "value"]],
         "Variable": [["Scanner.Token", "name"]],
-        "Assign": [["Scanner.Token", "name"], ["Expr", "value"]]
+        "Assign": [["Scanner.Token", "name"], ["Expr", "value"]],
+        "Logical": [["Expr", "left"], ["Scanner.Token", "operator"], ["Expr", "right"]],
+
     },
     "Stmt": {
         "Expression": [["Expr", "expression"]],
         "Print": [["Expr", "expression"]],
         "Var": [["Scanner.Token", "name"], ["Expr", "initializer"]],
-        "Block": [["Stmt", "statements"]]
+        "Block": [["Stmt", "statements"]],
+        "If": [["Expr", "condition"], ["Stmt", "then_branch"], ["Stmt", "else_branch"]]
     }
 }
 

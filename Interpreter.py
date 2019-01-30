@@ -87,6 +87,13 @@ class Interpreter:
     def visit_expression(self,  stmt):
         self._evaluate(stmt.expression)
 
+    def visit_if(self, stmt):
+        if _is_truthy(self._evaluate(stmt.condition)):
+            self._execute(stmt.then_branch)
+        elif stmt.elseBranch is not None:
+            self._execute(self._evaluate(stmt.else_branch))
+        return None
+
     def visit_print(self,  stmt):
         value = self._evaluate(stmt.expression)
         print(_stringify(value))
@@ -107,6 +114,18 @@ class Interpreter:
 
     def visit_literal(self, expr):
         return expr.value
+
+    def visit_logical(self, expr):
+        """short-circuits and return"""
+        left = self._evaluate(expr.left)
+        if expr.operator.type == TokenType.OR:  # or
+            if _is_truthy(left):
+                return left
+        else:
+            if not _is_truthy(left):
+                return left
+
+        return self._evaluate(expr.right)
 
     def visit_grouping(self, expr):
         return self._evaluate(expr.expression)
