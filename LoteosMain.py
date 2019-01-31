@@ -93,7 +93,7 @@ class Lox:
 
 def main():
     program = Lox()
-    # The first argument in sys.argv will always be Lox.py
+    # The first argument in sys.argv will always be LoteosMain.py
     num_args = len(sys.argv) - 1
     if num_args > 1:
         print("Usage: pylox [script]")

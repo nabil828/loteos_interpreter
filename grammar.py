@@ -1,4 +1,6 @@
 import Scanner
+from LoteosEnum import CommandType
+from LoteosEnum import ConsistencyType
 
 
 class Expr:
@@ -45,7 +47,7 @@ class Call(Expr):
     def __init__(self, callee, paren, arguments):
         assert isinstance(callee, Expr)
         assert isinstance(paren, Scanner.Token)
-        # assert isinstance(arguments, Expr)
+        assert isinstance(arguments, Expr)
 
         self.callee = callee
         self.paren = paren
@@ -112,6 +114,8 @@ class Grouping(Expr):
     def accept(self, visitor):
         return visitor.visit_grouping(self)
 
+import Scanner
+
 
 class Stmt:
     pass
@@ -120,8 +124,8 @@ class Stmt:
 class Function(Stmt):
     def __init__(self, name, params, body):
         assert isinstance(name, Scanner.Token)
-        # assert isinstance(params, Scanner.Token)
-        # assert isinstance(body, Stmt)
+        assert isinstance(params, Scanner.Token)
+        assert isinstance(body, Stmt)
 
         self.name = name
         self.params = params
@@ -188,8 +192,8 @@ class Expression(Stmt):
 
 
 class Block(Stmt):
-    def __init__(self, statements=""):
-        assert isinstance(statements, list)
+    def __init__(self, statements):
+        assert isinstance(statements, Stmt)
 
         self.statements = statements
 
@@ -201,7 +205,7 @@ class If(Stmt):
     def __init__(self, condition, then_branch, else_branch):
         assert isinstance(condition, Expr)
         assert isinstance(then_branch, Stmt)
-        # assert isinstance(else_branch, Stmt)
+        assert isinstance(else_branch, Stmt)
 
         self.condition = condition
         self.then_branch = then_branch
@@ -209,4 +213,32 @@ class If(Stmt):
 
     def accept(self, visitor):
         return visitor.visit_if(self)
+
+
+class LoteosStmt:
+    pass
+
+
+class Assert(LoteosStmt):
+    def __init__(self, cmd, consistency_type):
+        assert isinstance(cmd, Command)
+        assert isinstance(consistency_type, ConsistencyType)
+
+        self.cmd = cmd
+        self.consistency_type = consistency_type
+
+    def accept(self, visitor):
+        return visitor.visit_assert(self)
+
+
+class Command(LoteosStmt):
+    def __init__(self, command_type, params):
+        assert isinstance(command_type, CommandType)
+        # assert isinstance(params, Scanner.Token)
+
+        self.command_type = command_type
+        self.params = params
+
+    def accept(self, visitor):
+        return visitor.visit_command(self)
 

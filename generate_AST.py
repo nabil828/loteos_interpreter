@@ -2,7 +2,7 @@
 
 # import sys
 
-tab = "    " # Tab is four spaces
+tab = "    "  # Tab is four spaces
 
 base_desc = {
     "Expr": {
@@ -15,7 +15,7 @@ base_desc = {
         "Assign": [["Scanner.Token", "name"], ["Expr", "value"]],
         "Logical": [["Expr", "left"], ["Scanner.Token", "operator"], ["Expr", "right"]],
         "Call": [["Expr", "callee"], ["Scanner.Token", "paren"], ["Expr", "arguments"]]
-            },
+    },
     "Stmt": {
         "Expression": [["Expr", "expression"]],
         "Print": [["Expr", "expression"]],
@@ -25,8 +25,11 @@ base_desc = {
         "While": [["Expr", "condition"], ["Stmt", "body"]],
         "Function": [["Scanner.Token", "name"], ["Scanner.Token", "params"], ["Stmt", "body"]],
         "Return": [["Scanner.Token", "keyword"], ["Expr", "value"]]
-
-}
+    },
+    "LoteosStmt": {
+        "Assert": [["Command", "cmd"], ["ConsistencyType", "consistency_type"]],
+        "Command": [["command_type", "CommandType"], ["Scanner.Token", "params"]]
+    }
 }
 
 
@@ -55,9 +58,9 @@ def define_type(con, base_name, class_name, fields):
 
     con.write("\n")
     con.writelines(["class " + class_name + "(" + base_name + "):\n"
-                    "",
+                                                              "",
                     # The constructor
-                    tab + "def __init__(self, " +field_str + "):\n"])
+                    tab + "def __init__(self, " + field_str + "):\n"])
     con.writelines(assert_stmts)
     con.write("\n")
     con.writelines(var_stmts)
@@ -71,3 +74,4 @@ if __name__ == "__main__":
     with open(path, "w+") as con:
         define_ast(con, "Expr", base_desc["Expr"])
         define_ast(con, "Stmt", base_desc["Stmt"])
+        define_ast(con, "LoteosStmt", base_desc["LoteosStmt"])

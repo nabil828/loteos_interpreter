@@ -1,16 +1,30 @@
 import grammar
 # from Token import Token
 from TokenType import TokenType
+from LoteosEnum import CommandType
+from LoteosEnum import ConsistencyType
 
 # program     -> declaration* EOF ;
 # 
 # declaration -> funDecl
 #             | varDecl
-#             | statement ;
+#             | statement
+#             | lotoesCommand;
 # 
 # funDecl  -> "fun" function ;
 # function -> IDENTIFIER "(" parameters? ")" block ;
 # parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
+
+# lotoesCommand -> asserStmt | command
+# asserStmt -> "assert" "(" command, consistency_level ")" ;
+# command -> read | write | remove | lock | unlock
+# read -> READ "(" primary ")" ;
+# write -> WRITE "(" primary "," primary ")" ;
+# remove -> REMOVE "(" primary ")" ;
+# lock -> LOCK "(" primary ")" ;
+# unlock -> UNLOCK "(" primary ")" ;
+
+# consistency_level -> SC | EC | MC ;
 
 
 # statement  -> exprStmt
@@ -26,7 +40,8 @@ from TokenType import TokenType
 # forStmt   -> "for" "(" ( varDecl | exprStmt | ";" )
 #                       expression? ";"
 #                       expression? ")" statement ;
-#
+# varDecl -> "var" IDENTIFIER ( "=" expression )? ";" ;
+
 # whileStmt -> "while" "(" expression ")" statement ;
 #
 # ifStmt    -> "if" "(" expression ")" statement ( "else" statement )? ;
@@ -54,7 +69,7 @@ from TokenType import TokenType
 
 #                | primary ;
 # primary        -> NUMBER | STRING | "false" | "true" | "nil"
-#                | "(" expression ")" ;
+#                | "(" expression ")"  | IDENTIFIER ;
 
 class ParseError(Exception):
     """Raise for an unexpected token in the parser."""
@@ -303,8 +318,107 @@ class Parser:
                 return self._var_declaration()
             elif self._match(TokenType.FUN):
                 return self._function("function")
+            elif self._match(TokenType.ASSERT):
+                return self._assert()
+            elif self._match(TokenType.READ):
+                return self._read_command()
+            elif self._match(TokenType.WRITE):
+                return self._write_command()
+            elif self._match(TokenType.REMOVE):
+                return self._remove_command()
+            elif self._match(TokenType.LOCK):
+                return self._lock_command()
+            elif self._match(TokenType.UNLOCK):
+                return self._unlock_command()
             else:
                 return self._statement()
+        except ParseError:
+            self._synchronize()
+            return None
+
+    def _assert(self):
+        """
+        Matches based on the rule:
+        asserStmt -> "assert" "(" command, consistency_level ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after assert.")
+        _command = self._declaration()
+        self._consume(TokenType.COMMA, "Except ',' after command key.")
+        _consistency_level = self._consistency_level()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after assert argument.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Assert(_command, _consistency_level)
+
+    def _read_command(self):
+        """
+        Matches based on the rule
+        # read -> READ "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after read.")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after read.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Command(CommandType.GET_COMMAND, _key)
+
+    def _write_command(self):
+        """
+        Matches based on the rule
+        # write -> WRITE "(" primary "," primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after write.")
+        _key = self._primary()
+        self._consume(TokenType.COMMA, "Except ',' after command's key.")
+        _value = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after command's key.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Command(CommandType.PUT_COMMAND, [_key, _value])
+
+    def _remove_command(self):
+        """
+        Matches based on the rule
+        # remove -> REMOVE "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after remove.")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after remove.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Command(CommandType.REMOVE_COMMAND, _key)
+
+    def _lock_command(self):
+        """
+        Matches based on the rule
+        # lock -> LOCK "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after lock.")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after lock.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Command(CommandType.LOCK_COMMAND, _key)
+
+    def _unlock_command(self):
+        """
+        Matches based on the rule
+        # unlock -> UNLOCK "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after unlock .")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after unlock.")
+        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return grammar.Command(CommandType.UNLOCK_COMMAND, _key)
+
+    def _consistency_level(self):
+        """
+        Matches based on the rule:
+        # consistency_level -> SC | EC | MC ;
+        """
+        try:
+            if self._match(TokenType.SC):
+                return ConsistencyType.SC
+            elif self._match(TokenType.EC):
+                return ConsistencyType.EC
+            elif self._match(TokenType.MC):
+                return ConsistencyType.MC
+            raise ParseError("Invalid consistency level")
         except ParseError:
             self._synchronize()
             return None

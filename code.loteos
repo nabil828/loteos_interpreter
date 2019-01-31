@@ -1,0 +1,5 @@
+lock("apple");
+    write("apple" , 1);
+    read("apple");
+    remove("apple");
+unlock("apple");

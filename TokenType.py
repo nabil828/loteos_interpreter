@@ -49,3 +49,16 @@ class TokenType(Enum):
     WHILE = auto()
 
     EOF = auto()
+
+    # Loteos
+    ASSERT = auto()
+    READ = auto()
+    WRITE = auto()
+    REMOVE = auto()
+    LOCK = auto()
+    UNLOCK = auto()
+
+    SC = auto()
+    EC = auto()
+    MC = auto()
+

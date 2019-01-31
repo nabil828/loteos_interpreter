@@ -1,11 +1,13 @@
 import numbers
 from TokenType import TokenType
-import Lox
+import LoteosMain
 from Enviroment import Environment
 from LoxRuntimeError import LoxRuntimeError
 from LoxCallable import LoxCallable
 from LoxFunction import LoxFunction
 from Return import Return
+from LoteosEnum import CommandType
+from LoteosEnum import ConsistencyType
 
 
 def _stringify(obj):
@@ -74,7 +76,7 @@ class Interpreter:
             for statement in statements:
                 self._execute(statement)
         except LoxRuntimeError:
-            Lox.Lox().runtime_error(LoxRuntimeError)
+            LoteosMain.Lox().runtime_error(LoxRuntimeError)
 
     def _evaluate(self, expr):
         return expr.accept(self)
@@ -91,14 +93,47 @@ class Interpreter:
         finally:
             self.globals = previous
 
-    def visit_block(self, stmt): # of type : Block
+    def visit_assert(self, stmt):
+        """
+        assert that the execution of the command meets the provided consistency requirement
+        :param stmt: command + consistency_level
+        :return: None
+        """
+        # ToDo execute the command
+        # ToDo observe the returned status
+        # ToDo compare the status with the consistency_level
+        pass
+
+    def visit_command(self, stmt):
+        """
+
+        :param stmt: command + params
+        :return: None
+        """
+        # execute the command
+        if stmt.command_type == CommandType.GET_COMMAND:
+            print "get------"
+        elif stmt.command_type == CommandType.PUT_COMMAND:
+            print "put------"
+        elif stmt.command_type == CommandType.REMOVE_COMMAND:
+            print "remove------"
+        elif stmt.command_type == CommandType.LOCK_COMMAND:
+            print "lock------"
+        elif stmt.command_type == CommandType.UNLOCK_COMMAND:
+            print "unlock------"
+        else:
+            raise RuntimeError("Unsupported command")
+        # observe the returned status
+        # ToDo
+
+    def visit_block(self, stmt):  # of type : Block
         self._execute_block(stmt.statements, Environment(self.globals))
         return None
 
     def visit_expression(self,  stmt):
         self._evaluate(stmt.expression)
 
-    def visit_function(self, stmt): #stmt: Stmt.Function
+    def visit_function(self, stmt): # stmt: Stmt.Function
         function_ = LoxFunction(stmt, self.current_environment)
         self.current_environment.define(stmt.name.lexeme, function_)
         return None

@@ -58,7 +58,13 @@ class Scanner:
             "true":  TokenType.TRUE,
             "var":   TokenType.VAR,
             "while": TokenType.WHILE,
-            "return": TokenType.RETURN
+            "return": TokenType.RETURN,
+            "assert": TokenType.ASSERT,
+            "read": TokenType.READ,
+            "write": TokenType.WRITE,
+            "remove": TokenType.REMOVE,
+            "lock": TokenType.LOCK,
+            "unlock": TokenType.UNLOCK
         }
 
         # Indices for current lexeme
