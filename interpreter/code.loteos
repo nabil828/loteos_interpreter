@@ -1,0 +1,5 @@
+lock("apple");
+    assert(write("apple" , 1), SC);
+    read("apple");
+    remove("apple");
+unlock("apple");
