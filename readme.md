@@ -19,8 +19,10 @@ pip install loteos_interpreter
 -----  
   
  Introduction  
-> Interpreter for Loteos language using Python and Flask.  
-  
+> Interpreter for Loteos language using Python.  
+
+Loteos labguage is imperative dynamically typed.
+
 The goal of this document is to extensively document the system and implement it.  
   
   
