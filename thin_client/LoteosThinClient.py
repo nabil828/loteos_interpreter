@@ -2,50 +2,50 @@
 Thin client for Loteos Key value store
 """
 
-__author__ = 'Owner'
-
-import NodeList
-import sys
 import threading
-import Command
-sys.path.insert(0, 'C:\loteos\\')
-sys.path.insert(0, '../loteos')
-import wire
-from LoteosThinClientSupport import ResponseObj, incoming_requests_q, response_q
-
-# local or planetlab
-# global mode
-# mode = mode_
+# import sys
+# from os import path
+# sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
+from . import wire
+from .LoteosThinClientSupport import ResponseObj, outgoing_requests_q, response_q
+# sys.path.append('../Command.py')
+wireObj = None
 
 
-ip_port = NodeList.look_up_node_id(hashedKeyModN)
-receiving_port = ip_port.split(':')[1]
-wireObj = wire.Wire(int(N), hashedKeyModN, mode, "main", receiving_port, successor_list)
-
-global vector_stamp_table
-vector_stamp_table = [0] * int(N)
+def settings(N):
+    global wireObj
+    wireObj = wire.Wire(int(N))
 
 
 # user_input(2, queue_obj(Command.GET, key, ""));
-def user_input():  # producer for incoming_requests_q
+def send_requests():
+    """
+    producer for outgoing_requests_q
+    :return:
+    """
     global wireObj
 
     while True:
-        queue_obj = incoming_requests_q.get()
-        wireObj.send_request(queue_obj.cmd, queue_obj.key, len(queue_obj.value), queue_obj.value, threading.currentThread(), node,
-                                      .2, 0)
-        response_code, response_value, version = wireObj.receive_reply(threading.currentThread(),
-                                                                                Command.REPLICATE_GET)
+        queue_obj = outgoing_requests_q.get()
+        wireObj.send_request(queue_obj.command,
+                             str(queue_obj.key),
+                             len(str(queue_obj.value)),  # Todo add tostring() for your grammer
+                             str(queue_obj.value),
+                             .2,
+                             0)
+        response_code, response_value, version = wireObj.receive_reply(queue_obj.command)
         response_q.put(ResponseObj(response_code, response_value, version))
 
 
-if __name__ == "__main__":
+def start(_n):
     """
-    ToDo link to resources htat you need from loteos Kv store
+    ToDo link to resources that you need from loteos Kv store
     """
     global N
-    N = sys.argv[1]
+    # N = sys.argv[1]
+    N = _n
+    settings(N)
 
-    userInputThread = threading.Thread(target=user_input)
-    userInputThread.setName('userInput thread')
-    userInputThread.start()
+    user_input_thread = threading.Thread(target=send_requests)
+    user_input_thread.setName('userInput thread')
+    user_input_thread.start()

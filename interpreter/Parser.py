@@ -4,87 +4,108 @@ from TokenType import TokenType
 from LoteosEnum import CommandType
 from LoteosEnum import ConsistencyType
 
+##################################################################################################
+# Declarations: A program is a series of declarations, which are the statements                  #
+# that bind new identifiers or any of the other statement types:                                 #
+##################################################################################################
 # program     -> declaration* EOF ;
 # 
 # declaration -> funDecl
 #             | varDecl
-#             | statement
-#             | lotoesCommand;
+#             | statement ;
 # 
 # funDecl  -> "fun" function ;
-# function -> IDENTIFIER "(" parameters? ")" block ;
-# parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
-
-# lotoesCommand -> assert | command
-# asser -> "assert" "(" command, consistency_level ")" ;
-# command -> read | write | remove | lock | unlock
-# read -> READ "(" primary ")" ;
-# write -> WRITE "(" primary "," primary ")" ;
-# remove -> REMOVE "(" primary ")" ;
-# lock -> LOCK "(" primary ")" ;
-# unlock -> UNLOCK "(" primary ")" ;
-
-# consistency_level -> SC | EC | MC ;
+# varDecl -> "var" IDENTIFIER ( "=" expression | read )? ";" ;
 
 
+##################################################################################################
+# Statements: The remaining statement rules produce side effects, but do not introduce bindings: #
+##################################################################################################
 # statement  -> exprStmt
 #            | forStmt
 #            | ifStmt
 #            | printStmt
 #            | returnStmt
 #            | whileStmt
-#            | block ;
-# returnStmt -> "return" expression? ";" ;
+#            | block
+#            | lotoesCommandStmt
+#            ;
 
-#
+# exprStmt  -> expression ";" ;
 # forStmt   -> "for" "(" ( varDecl | exprStmt | ";" )
 #                       expression? ";"
 #                       expression? ")" statement ;
-# varDecl -> "var" IDENTIFIER ( "=" expression )? ";" ;
-
-# whileStmt -> "while" "(" expression ")" statement ;
-#
 # ifStmt    -> "if" "(" expression ")" statement ( "else" statement )? ;
-#
+# printStmt -> "print" expression ";" ;
+# returnStmt -> "return" expression? ";" ;
+# whileStmt -> "while" "(" expression ")" statement ;
 # block     -> "{" declaration* "}" ;
-#
-# exprStmt  -> expression ";" ;
-# printStmt -> "print" expression "
 
 
+##################################################################################################
+# Expressions: Expressions produce values.                                                       #
+##################################################################################################
 # expression -> assignment ;
-# assignment -> identifier "=" assignment
-#            | logic_or ;
+# assignment -> python_ref | IDENTIFIER "=" assignment | read | logic_or ;
 # logic_or   -> logic_and ( "or" logic_and )* ;
 # logic_and  -> equality ( "and" equality )* ;
-
+#
 # equality       -> comparison ( ( "!=" | "==" ) comparison )* ;
 # comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 # addition       -> multiplication ( ( "-" | "+" ) multiplication )* ;
 # multiplication -> unary ( ( "/" | "*" ) unary )* ;
-
+#
 # unary -> ( "!" | "-" ) unary | call ;
 # call  -> primary ( "(" arguments? ")" )* ;
+# primary        ->  NUMBER | STRING | "false" | "true" | "nil"
+#                | "(" expression ")"  | python_ref | python_ref | IDENTIFIER ;
+# python_ref     -> "@" IDENTIFIER
+
+
+###################################################
+# Utility Rules:  reused helper rules:            #
+###################################################
+# function -> IDENTIFIER "(" parameters? ")" block ;
+# parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
 # arguments -> expression ( "," expression )* ;
 
-#                | primary ;
-# primary        -> NUMBER | STRING | "false" | "true" | "nil"
-#                | "(" expression ")"  | IDENTIFIER ;
+
+###################################################
+# Loteos related rules                            #
+###################################################
+# lotoesCommandStmt -> lotoesCommand ";" ;
+# lotoesCommand -> assert | command
+#
+# assert -> "assert" "(" command, consistency_level ")" ;
+# command -> read | write | remove | lock | unlock | register | subscribe | publish
+#
+# read -> READ "(" primary ")" ;
+# write -> WRITE "(" primary "," expression")" ;
+# remove -> REMOVE "(" primary ")" ;
+# lock -> LOCK "(" primary ")" ;
+# unlock -> UNLOCK "(" primary ")" ;
+# register -> REGISTER "(" primary ")" ;
+# subscribe -> SUBSCRIBE "(" primary ")" ;
+# publish -> PUBLISH "(" primary ")" ;
+#
+# consistency_level -> SC | EC | MC ;
+
+
+
 
 class ParseError(Exception):
     """Raise for an unexpected token in the parser."""
 
 
 class Parser:
-
     def __init__(self, interpreter, token_list):
-
         self._interpreter = interpreter
 
         # The current head index in the token list
         self._current = 0
 
         self.token_list = token_list
+        # self.macro_table = {}
 
     def parse(self):
         statements = []
@@ -134,9 +155,16 @@ class Parser:
 
     def _statement(self):
         """Matches based on the rule:
-        statement -> exprStmt
-          | printStmt
-          | block ;"""
+        # statement  -> exprStmt
+        #            | forStmt
+        #            | ifStmt
+        #            | printStmt
+        #            | returnStmt
+        #            | whileStmt
+        #            | block
+        #            | lotoesCommandStmt
+        #            ;
+        """
         if self._match(TokenType.PRINT):
             return self._print_statement()
         elif self._match(TokenType.LEFT_BRACE):
@@ -149,8 +177,29 @@ class Parser:
             return self._for_statement()
         elif self._match(TokenType.RETURN):
             return self._return_statement()
+        elif self._match_loteos():
+            return self._loteos_command_statement()
         else:
             return self._expression_statement()
+
+    def _match_loteos(self):
+        if self._check(TokenType.READ):
+            return True
+        elif self._check(TokenType.WRITE):
+            return True
+        elif self._check(TokenType.REMOVE):
+            return True
+        elif self._check(TokenType.PUBLISH):
+            return True
+        elif self._check(TokenType.SUBSCRIBE):
+            return True
+        elif self._check(TokenType.REGISTER):
+            return True
+        elif self._check(TokenType.LOCK):
+            return True
+        elif self._check(TokenType.UNLOCK):
+            return True
+        return False
 
     def _if_statement(self):
         self._consume(TokenType.LEFT_PAREN, "Except '(' after if.")
@@ -222,13 +271,43 @@ class Parser:
         return grammar.Return(keyword, value)
 
     def _var_declaration(self):
+        """
+        Matches based on the rule:
+        varDecl -> "var" IDENTIFIER ( "=" expression | read )? ";"
+        :return:
+        """
         name = self._consume(TokenType.IDENTIFIER, "Expect variable name.")
         initializer = None
         if self._match(TokenType.EQUAL):
-            initializer = self._expression()
-
+            if self._match(TokenType.READ):
+                initializer = self._read_command()
+            else:
+                initializer = self._expression()
         self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return grammar.Var(name, initializer)
+
+    def _loteos_command_statement(self):
+        command = self._loteos_command()
+        self._consume(TokenType.SEMICOLON, "Expect ';' after expression.")
+        return grammar.LoteosStmt(command)
+
+    def _loteos_command(self):
+        if self._match(TokenType.READ):
+            return self._read_command()
+        elif self._match(TokenType.WRITE):
+            return self._write_command()
+        elif self._match(TokenType.REMOVE):
+            return self._remove_command()
+        elif self._match(TokenType.PUBLISH):
+            return self._publish_command()
+        elif self._match(TokenType.SUBSCRIBE):
+            return self._subscribe_command()
+        elif self._match(TokenType.REGISTER):
+            return self._register_command()
+        elif self._match(TokenType.LOCK):
+            return self._lock_command()
+        elif self._match(TokenType.UNLOCK):
+            return self._unlock_command()
 
     def _expression_statement(self):
         expr = self._expression()
@@ -244,17 +323,27 @@ class Parser:
         return statements
 
     def _assignment(self):
+        """
+        Matches
+        assignment -> identifier "=" assignment | read
+        :return:
+        """
         expr = self._or()
 
-        if self._match(TokenType.EQUAL):
+        if self._match(TokenType.READ):
+            return self._read_command()
+        elif self._match(TokenType.EQUAL):
             equals = self._previous()
             value = self._assignment()
 
-            if isinstance(expr, grammar.Variable):
+            if isinstance(expr, grammar.PythonRef):
                 name = expr.name
-                return grammar.Assign(name, value)
-            self.error(equals, "Invalid assignment target.")
-
+                return grammar.Assign(name, value, "python_var")
+            elif isinstance(expr, grammar.Variable):
+                name = expr.name
+                return grammar.Assign(name, value, "loteos_var")
+            else:
+                self._error(self._current, "Invalid assignment target.")
         return expr
 
     def _or(self):
@@ -306,7 +395,7 @@ class Parser:
         body = self._block_statement()
         return grammar.Function(name, parameters, body)
 
-    def _declaration(self, _str=""):
+    def _declaration(self):
         """
         Matches based on the rule:
         # declaration -> funDecl
@@ -318,18 +407,6 @@ class Parser:
                 return self._var_declaration()
             elif self._match(TokenType.FUN):
                 return self._function("function")
-            elif self._match(TokenType.ASSERT):
-                return self._assert()
-            elif self._match(TokenType.READ):
-                return self._read_command(_str)
-            elif self._match(TokenType.WRITE):
-                return self._write_command(_str)
-            elif self._match(TokenType.REMOVE):
-                return self._remove_command(_str)
-            elif self._match(TokenType.LOCK):
-                return self._lock_command()
-            elif self._match(TokenType.UNLOCK):
-                return self._unlock_command()
             else:
                 return self._statement()
         except ParseError:
@@ -346,10 +423,10 @@ class Parser:
         self._consume(TokenType.COMMA, "Except ',' after command key.")
         _consistency_level = self._consistency_level()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after assert argument.")
-        self._consume(TokenType.SEMICOLON, "Expect ';' after assert statement.");
+
         return grammar.Assert(_command, _consistency_level)
 
-    def _read_command(self, _str=""):
+    def _read_command(self):
         """
         Matches based on the rule
         # read -> READ "(" primary ")" ;
@@ -357,25 +434,26 @@ class Parser:
         self._consume(TokenType.LEFT_PAREN, "Except '(' after read.")
         _key = self._primary()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after read.")
-        if _str != "coming_from_assert":
-            self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return grammar.Command(CommandType.GET_COMMAND, _key)
 
-    def _write_command(self, _str=""):
+        return grammar.Command(CommandType.GET_COMMAND, (_key,))  # have it in a tuble: immutable list
+
+    def _write_command(self):
         """
         Matches based on the rule
-        # write -> WRITE "(" primary "," primary ")" ;
+        # write -> WRITE "(" primary "," expression | python_ref")" ;
         """
         self._consume(TokenType.LEFT_PAREN, "Except '(' after write.")
         _key = self._primary()
         self._consume(TokenType.COMMA, "Except ',' after command's key.")
-        _value = self._primary()
+        if self._check(TokenType.AT):
+            _value = self._python_ref()
+        else:
+            _value = self._expression()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after command's key.")
-        if _str != "coming_from_assert":
-            self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return grammar.Command(CommandType.PUT_COMMAND, [_key, _value])
 
-    def _remove_command(self, _str=""):
+        return grammar.Command(CommandType.PUT_COMMAND, (_key, _value))
+
+    def _remove_command(self):
         """
         Matches based on the rule
         # remove -> REMOVE "(" primary ")" ;
@@ -383,9 +461,53 @@ class Parser:
         self._consume(TokenType.LEFT_PAREN, "Except '(' after remove.")
         _key = self._primary()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after remove.")
-        if _str != "coming_from_assert":
-            self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return grammar.Command(CommandType.REMOVE_COMMAND, _key)
+
+        return grammar.Command(CommandType.REMOVE_COMMAND, (_key,))
+
+    def _register_command(self):
+        """
+        Matches based on the rule
+        # register -> REGISTER "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after remove.")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after remove.")
+
+        return grammar.Command(CommandType.REGISTER_COMMAND, (_key,))
+
+    def _publish_command(self):
+        """
+        Matches based on the rule
+        # publish -> PUBLISH "("  python_ref")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after remove.")
+        _value = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after remove.")
+
+        return grammar.Command(CommandType.PUBLISH_COMMAND, (_value,))
+
+    def _python_ref(self):
+        """
+        # python_ref     -> "@" IDENTIFIER
+        :param _str:
+        :return:
+        """
+        self._consume(TokenType.AT, "Expect '@' after expression.")
+        python_variable_name = self._primary()
+        # self.macro_table[python_variable_name.name.lexeme] = ""
+
+        return grammar.PythonRef(python_variable_name.name.lexeme)
+
+    def _subscribe_command(self):
+        """
+        Matches based on the rule
+        # subscribe -> SUBSCRIBE "(" primary ")" ;
+        """
+        self._consume(TokenType.LEFT_PAREN, "Except '(' after remove.")
+        _key = self._primary()
+        self._consume(TokenType.RIGHT_PAREN, "Except ')' after remove.")
+
+        return grammar.Command(CommandType.SUBSCRIBE_COMMAND, (_key,))
 
     def _lock_command(self):
         """
@@ -395,8 +517,8 @@ class Parser:
         self._consume(TokenType.LEFT_PAREN, "Except '(' after lock.")
         _key = self._primary()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after lock.")
-        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return grammar.Command(CommandType.LOCK_COMMAND, _key)
+
+        return grammar.Command(CommandType.LOCK_COMMAND, (_key,))
 
     def _unlock_command(self):
         """
@@ -406,8 +528,8 @@ class Parser:
         self._consume(TokenType.LEFT_PAREN, "Except '(' after unlock .")
         _key = self._primary()
         self._consume(TokenType.RIGHT_PAREN, "Except ')' after unlock.")
-        self._consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
-        return grammar.Command(CommandType.UNLOCK_COMMAND, _key)
+
+        return grammar.Command(CommandType.UNLOCK_COMMAND, (_key,))
 
     def _consistency_level(self):
         """
@@ -517,19 +639,25 @@ class Parser:
         return grammar.Call(callee, paren, arguments)
 
     def _primary(self):
+        """
+        Matches:
+        primary        -> python_ref | NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")"  | python_ref | IDENTIFIER ;
+        :return:
+        """
         if self._match(TokenType.FALSE):
             return grammar.Literal(False)
         elif self._match(TokenType.TRUE):
             return grammar.Literal(True)
         elif self._match(TokenType.NIL):
             return grammar.Literal(None)
-
         elif self._match(TokenType.NUMBER, TokenType.STRING):
             return grammar.Literal(self._previous().literal)
-
+        elif self._match(TokenType.AT):
+            # self._consume(TokenType.AT, "Expect @ before python referen.ce")
+            self._advance()
+            return grammar.PythonRef(self._previous().lexeme)
         elif self._match(TokenType.IDENTIFIER):
             return grammar.Variable(self._previous())
-
         elif self._match(TokenType.LEFT_PAREN):
             expr = self._expression()
             self._consume(TokenType.RIGHT_PAREN,

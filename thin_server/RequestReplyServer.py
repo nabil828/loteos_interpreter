@@ -6,6 +6,7 @@ __author__ = 'Owner'
 # import struct
 import array
 import udpSendRecieve
+import HashTable
 
 
 class Stack:
@@ -95,7 +96,7 @@ class RequestReplyServer:
         # Print.print_("sent msg with this header" + top + ", stack: " + '[%s]' % ', '.join(map(str, self.stack.items)), Print.RequestReplyServer, local_node_id, threading.currentThread())
         # Print.print_("sent msg with this header" + sixteen_byte_header, Print.RequestReplyServer, local_node_id, threading.currentThread())
 
-    def receive(self, cur_thread, local_node_id, command="", key=""):
+    def receive(self):
         while True:
             data, addr = self.udp_obj.receive_request()
             received_header = data[0:16]

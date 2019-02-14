@@ -1,9 +1,9 @@
 #! /usr/local/bin/python3
 
-import grammar
+from interpreter import grammar
 # import scanner
-from TokenType import TokenType
-from Token import Token
+from interpreter.TokenType import TokenType
+from interpreter.Token import Token
 
 
 class AstPrinter:

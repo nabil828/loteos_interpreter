@@ -4,6 +4,7 @@ __author__ = 'Owner'
 local = 100
 planetLab = 200
 testing = 300
+client_server = 400  # for the thin_server
 
 
 def print_mode(x):
@@ -14,5 +15,7 @@ def print_mode(x):
         return "planetLab"
     elif x == testing:
         return "testing"
+    elif x == client_server :
+        return "client_server "
     else:
         return "Something wrong happened!!!!!!!!!!!!"

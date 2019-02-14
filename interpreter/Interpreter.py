@@ -1,6 +1,6 @@
 import numbers
 from TokenType import TokenType
-import LoteosMain
+# from LoteosMain import Loteos
 from Enviroment import Environment
 from LoxRuntimeError import LoxRuntimeError
 from LoxCallable import LoxCallable
@@ -8,8 +8,10 @@ from LoxFunction import LoxFunction
 from Return import Return
 from LoteosEnum import CommandType
 import Command
+import pickle
 
-from ThinClient.LoteosThinClientSupport import QueueObj, incoming_requests_q, response_q
+import json
+from thin_client.LoteosThinClientSupport import QueueObj, outgoing_requests_q, response_q
 
 
 def _stringify(obj):
@@ -62,9 +64,14 @@ def _check_number_operands(operator, left, right):
 
 
 class Interpreter:
-    def __init__(self):
+    registered_id = None
+
+    def __init__(self, locals_, globals_):
         self.globals = Environment()
         self.current_environment = self.globals
+        # for python variables
+        self.py_locals = locals_
+        self.py_globals = globals_
 
         # Anonymous objects in Python
         # anon = type('',(object,),{})()
@@ -78,7 +85,8 @@ class Interpreter:
             for statement in statements:
                 self._execute(statement)
         except LoxRuntimeError:
-            LoteosMain.Lox().runtime_error(LoxRuntimeError)
+            # Loteos().runtime_error(LoxRuntimeError)
+            print(LoxRuntimeError.message, "\n[line ", LoxRuntimeError.token.line, "]")
 
     def _evaluate(self, expr):
         return expr.accept(self)
@@ -107,37 +115,102 @@ class Interpreter:
         print "asssert"
         pass
 
-    def visit_command(self, stmt):
+    def visit_loteosstmt(self, loteos_directive):
+        self._evaluate(loteos_directive.stmt)
+
+    def visit_command(self, loteos_directive):
         """
         Semantics of Loteos statements
-        :param stmt: command + params
+        :param loteos_directive: command + params
         :return: None
         """
         # execute the command
-        if stmt.command_type == CommandType.GET_COMMAND:
-            print "get------"
-            incoming_requests_q.put(QueueObj(Command.GET, stmt.params[0], ""))
-            respoonse_obj = response_q.get()
-        elif stmt.command_type == CommandType.PUT_COMMAND:
-            print "put------"
-            incoming_requests_q.put(QueueObj(Command.PUT, stmt.params[0], stmt.params[0]))
-            respoonse_obj = response_q.get()
-        elif stmt.command_type == CommandType.REMOVE_COMMAND:
+        if loteos_directive.command_type == CommandType.GET_COMMAND:
+            # print "get------"
+            outgoing_requests_q.put(QueueObj(Command.GET, loteos_directive.params[0].value, ""))
+            response_obj = response_q.get()
+            # Environment stuff
+            return response_obj.value
+        elif loteos_directive.command_type == CommandType.PUT_COMMAND:
+            # print "put------"
+
+            # if loteos_directive.params[0].name.name.lexeme in self.macro_table:
+            #     python_variable = loteos_directive.params[0].name.name.lexeme
+            #     value_ = self.find(python_variable)  # ToDo: for now strings, later serialize it
+            # else:
+            #     value_ = loteos_directive.params[1].value
+            value_ = self._execute(loteos_directive.params[1])
+            outgoing_requests_q.put(QueueObj(Command.PUT, loteos_directive.params[0].value, value_))
+            response_obj = response_q.get()
+            # print "put responsae" + Response.print_response(response_obj.response)
+            # if response_obj.value == Response.SUCCESS:  # Mainly for the GET commands
+            #     return response_obj.response_value
+            # else:
+            #     return None
+        elif loteos_directive.command_type == CommandType.REMOVE_COMMAND:
             print "remove------"
-            incoming_requests_q.put(QueueObj(Command.REMOVE, stmt.params[0], ""))
-            respoonse_obj = response_q.get()
-        elif stmt.command_type == CommandType.LOCK_COMMAND:
+            outgoing_requests_q.put(QueueObj(Command.REMOVE, loteos_directive.params[0].value, ""))
+            response_obj = response_q.get()
+        elif loteos_directive.command_type == CommandType.LOCK_COMMAND:
             print "lock------"
-            incoming_requests_q.put(QueueObj(Command.LOCK, stmt.params[0], ""))
-            respoonse_obj = response_q.get()
-        elif stmt.command_type == CommandType.UNLOCK_COMMAND:
+            outgoing_requests_q.put(QueueObj(Command.LOCK, loteos_directive.params[0].value, ""))
+            response_obj = response_q.get()
+        elif loteos_directive.command_type == CommandType.UNLOCK_COMMAND:
             print "unlock------"
-            incoming_requests_q.put(QueueObj(Command.UNLOCK, stmt.params[0], ""))
-            respoonse_obj = response_q.get()
+            outgoing_requests_q.put(QueueObj(Command.UNLOCK, loteos_directive.params[0].value, ""))
+            response_obj = response_q.get()
+
+        elif loteos_directive.command_type == CommandType.REGISTER_COMMAND:
+            # print "register------"
+            Interpreter.registered_id = loteos_directive.params[0].value
+            # Todo: how to enumerate string_id?
+            outgoing_requests_q.put(QueueObj(Command.REGISTER, Interpreter.registered_id, ""))
+            response_obj = response_q.get()
+            print response_obj.response
+        elif loteos_directive.command_type == CommandType.PUBLISH_COMMAND:
+            # print "publish------"
+            # we got a key and a msg
+            # CONSTRUCT MSG IN VALUE
+            # get it from the table
+            # if loteos_directive.params[0].name.name.lexeme in self.macro_table:
+            #     python_variable = loteos_directive.params[0].name.name.lexeme
+            #     t_ = self.find(python_variable)
+            #
+            #     # t_[2] = t_[2].toJSON()
+            #     # to_be_sent = json.dumps(t_)
+            #     to_be_sent = pickle.dumps(t_)
+            # else:
+            #     to_be_sent = json.dumps(loteos_directive.params[0].name.name.lexeme)
+            to_be_sent = self._execute(loteos_directive.params[0])
+            to_be_sent = pickle.dumps(to_be_sent)
+            obj = QueueObj(Command.PUBLISH, Interpreter.registered_id, to_be_sent)
+            outgoing_requests_q.put(obj)
+            l = outgoing_requests_q.qsize()
+            response_obj = response_q.get()
+            print response_obj.response
+        elif loteos_directive.command_type == CommandType.SUBSCRIBE_COMMAND:
+            # print "subscribe------"
+            # we got the channel name (key)
+            outgoing_requests_q.put(QueueObj(Command.SUBSCRIBE, Interpreter.registered_id, loteos_directive.params[0].value))
+            response_obj = response_q.get()
         else:
             raise RuntimeError("Unsupported command")
         # observe the returned status
         # ToDo
+
+    def find(self, _string):
+        for k, v in list(self.py_locals.iteritems()):
+            if k == _string:
+                return v
+        for k, v in list(self.py_globals.iteritems()):
+            if k == _string:
+                return v
+                # ToDo Serialize
+                # result = []
+                # for item in v:
+                #     result.append(json.dumps(item, default=lambda o: o.__dict__,
+                #                       sort_keys=True, indent=4))
+                # return result
 
     def visit_block(self, stmt):  # of type : Block
         self._execute_block(stmt.statements, Environment(self.globals))
@@ -155,7 +228,7 @@ class Interpreter:
         if _is_truthy(self._evaluate(stmt.condition)):
             self._execute(stmt.then_branch)
         elif stmt.else_branch is not None:
-            self._execute(self._evaluate(stmt.else_branch))
+            self._execute(stmt.else_branch)
         return None
 
     def visit_print(self,  stmt):
@@ -170,7 +243,7 @@ class Interpreter:
 
     def visit_var(self, stmt):  # of type : Stmt.Var
         value = None
-        if stmt.initializer is not None:  #??
+        if stmt.initializer is not None:  # ??
             value = self._evaluate(stmt.initializer)
 
         self.globals.define(stmt.name.lexeme, value)
@@ -184,9 +257,25 @@ class Interpreter:
 
     def visit_assign(self, expr):  # of type Expr.Assign
         value = self._evaluate(expr.value)
+        if expr.assign_type == "loteos_var":
+            self.globals.assign(expr.name, value)
+        else:  # python ref
+            assert expr.assign_type == "python_var"
+            if str(value) == "":
+                value = "\"\""
+            exec ('global ' + str(expr.name) + '; ' + str(expr.name) + ' =' + "\"" + str(value) + "\"", self.py_globals, self.py_locals)
+            # tmp = self.py_globals[expr.name.lexeme]
+            # if self.py_globals[expr.name.lexeme] is not None:
+            #     self.py_globals[expr.name.lexeme] = str(value)
+            # elif self.py_locals[expr.name.lexeme] is not None:
+            #     self.py_locals[expr.name.lexeme] = str(value)
+            # else:
+            #     raise RuntimeError
 
-        self.globals.assign(expr.name, value)
         return value
+
+    def visit_pythonref(self, expr):
+        return self.find(expr.name)
 
     def visit_literal(self, expr):
         return expr.value

@@ -1,5 +1,21 @@
-lock("apple");
-    assert(write("apple" , 1), SC);
-    read("apple");
-    remove("apple");
-unlock("apple");
+// lock("apple");
+//    assert(write("apple" , "red"), SC);
+// write("apple" , "green");
+// var x = read("apple");
+// print x;
+//    remove("apple");
+// unlock("apple");
+
+// register ("client1");
+// subscribe("server1");
+// publish(@msg);
+// print @document;
+// var x = read("document");
+// if (1 == 2) @document = 2; else @document = 5;
+// print @document;
+// var x = @document;
+print @document ;
+var x = @document;
+@document = 2;
+print @document;
+print x;

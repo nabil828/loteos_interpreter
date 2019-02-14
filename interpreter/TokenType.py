@@ -58,7 +58,14 @@ class TokenType(Enum):
     LOCK = auto()
     UNLOCK = auto()
 
+    PUBLISH = auto()
+    SUBSCRIBE = auto()
+    REGISTER = auto()
+
     SC = auto()
     EC = auto()
     MC = auto()
+
+
+    AT = auto()
 

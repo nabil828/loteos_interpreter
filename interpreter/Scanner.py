@@ -25,6 +25,7 @@ class Scanner:
             '+': lambda c: TokenType.PLUS,
             ';': lambda c: TokenType.SEMICOLON,
             '*': lambda c: TokenType.STAR,
+            '@': lambda c: TokenType.AT,
             # Look ahead one to match the 1 or 2 character tokens
             '!': lambda c: TokenType.BANG_EQUAL if self._match('=') else TokenType.BANG,
             '=': lambda c: TokenType.EQUAL_EQUAL if self._match('=') else TokenType.EQUAL,
@@ -32,7 +33,7 @@ class Scanner:
             '>': lambda c: TokenType.GREATER_EQUAL if self._match('=') else TokenType.GREATER,
             '/': lambda c: self._slash_logic(),
             # Ignore Whitespace
-            ' ':  lambda c: None,
+            ' ': lambda c: None,
             '\r': lambda c: None,
             '\t': lambda c: None,
             # Differs from Bob's since line_number comes from array index
@@ -65,6 +66,9 @@ class Scanner:
             "remove": TokenType.REMOVE,
             "lock": TokenType.LOCK,
             "unlock": TokenType.UNLOCK,
+            "register": TokenType.REGISTER,
+            "subscribe": TokenType.SUBSCRIBE,
+            "publish": TokenType.PUBLISH,
             "SC": TokenType.SC,
             "EC": TokenType.EC,
             "MC": TokenType.MC

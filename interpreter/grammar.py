@@ -1,8 +1,6 @@
 import Scanner
-from LoteosEnum import CommandType
-from LoteosEnum import ConsistencyType
-
-
+from interpreter.LoteosEnum import CommandType
+from interpreter.LoteosEnum import ConsistencyType
 class Expr:
     pass
 
@@ -47,7 +45,7 @@ class Call(Expr):
     def __init__(self, callee, paren, arguments):
         assert isinstance(callee, Expr)
         assert isinstance(paren, Scanner.Token)
-        assert isinstance(arguments, Expr)
+        # assert isinstance(arguments, Expr)
 
         self.callee = callee
         self.paren = paren
@@ -79,13 +77,25 @@ class Variable(Expr):
         return visitor.visit_variable(self)
 
 
+class PythonRef(Expr):
+    def __init__(self, name):
+        # assert isinstance(name, Scanner.Token)
+
+        self.name = name
+
+    def accept(self, visitor):
+        return visitor.visit_pythonref(self)
+
+
 class Assign(Expr):
-    def __init__(self, name, value):
-        assert isinstance(name, Scanner.Token)
+    def __init__(self, name, value, assign_type):
+        # assert isinstance(name, Scanner.Token)
         assert isinstance(value, Expr)
+        assert isinstance(assign_type, object)
 
         self.name = name
         self.value = value
+        self.assign_type = assign_type
 
     def accept(self, visitor):
         return visitor.visit_assign(self)
@@ -115,8 +125,8 @@ class Grouping(Expr):
         return visitor.visit_grouping(self)
 
 import Scanner
-
-
+from interpreter.LoteosEnum import CommandType
+from interpreter.LoteosEnum import ConsistencyType
 class Stmt:
     pass
 
@@ -138,7 +148,7 @@ class Function(Stmt):
 class Var(Stmt):
     def __init__(self, name, initializer):
         assert isinstance(name, Scanner.Token)
-        assert isinstance(initializer, Expr)
+        # assert isinstance(initializer, Expr)
 
         self.name = name
         self.initializer = initializer
@@ -193,7 +203,7 @@ class Expression(Stmt):
 
 class Block(Stmt):
     def __init__(self, statements):
-        assert isinstance(statements, Stmt)
+        # assert isinstance(statements, Stmt)
 
         self.statements = statements
 
@@ -204,7 +214,7 @@ class Block(Stmt):
 class If(Stmt):
     def __init__(self, condition, then_branch, else_branch):
         assert isinstance(condition, Expr)
-        assert isinstance(then_branch, Stmt)
+        # assert isinstance(then_branch, Stmt)
         assert isinstance(else_branch, Stmt)
 
         self.condition = condition
@@ -214,12 +224,24 @@ class If(Stmt):
     def accept(self, visitor):
         return visitor.visit_if(self)
 
-
-class LoteosStmt:
+import Scanner
+from interpreter.LoteosEnum import CommandType
+from interpreter.LoteosEnum import ConsistencyType
+class LoteosDirective:
     pass
 
 
-class Assert(LoteosStmt):
+class LoteosStmt(LoteosDirective):
+    def __init__(self, stmt):
+        assert isinstance(stmt, LoteosDirective)
+
+        self.stmt = stmt
+
+    def accept(self, visitor):
+        return visitor.visit_loteosstmt(self)
+
+
+class Assert(LoteosDirective):
     def __init__(self, cmd, consistency_type):
         assert isinstance(cmd, Command)
         assert isinstance(consistency_type, ConsistencyType)
@@ -231,9 +253,9 @@ class Assert(LoteosStmt):
         return visitor.visit_assert(self)
 
 
-class Command(LoteosStmt):
+class Command(LoteosDirective):
     def __init__(self, command_type, params):
-        assert isinstance(command_type, CommandType)
+        # assert isinstance(command_type, CommandType)
         # assert isinstance(params, Scanner.Token)
 
         self.command_type = command_type

@@ -3,19 +3,14 @@ import os
 import Scanner
 from TokenType import TokenType
 import Parser
-import AstPrinter
 import Interpreter
+from thin_client import LoteosThinClient
+from thin_server import LoteosThinServer
+# import MacroPass
 
-import LoxRuntimeError
+document = 1
 
-from grammar import Binary
-from grammar import Unary
-from grammar import Literal
-from grammar import Grouping
-from Token import Token
-
-
-class Lox:
+class Loteos:
     had_error = False  # class variable
     had_runtime_error = False
 
@@ -32,7 +27,10 @@ class Lox:
             self.had_runtime_error = False
 
     # static method
-    def run(self, source):
+    def run(self, source, locals_="", globals_=""):
+        # if len(python_varibales_tuple) != 0:
+        #     source = run_micropass(source, python_varibales_tuple)
+
         # scanning
         obj = Scanner.Scanner(source)
         tokens = obj.scan_tokens()
@@ -55,7 +53,11 @@ class Lox:
         if self.had_error:
             return
 
-        interpreter = Interpreter.Interpreter()
+        # macros
+        # macropass = MacroPass.MacroPass(dir()) #Todo: delete
+        # macropass.macro_pass(statements)
+
+        interpreter = Interpreter.Interpreter(locals_, globals_)
         interpreter.interpret(statements)
 
     def runtime_error(self, error):
@@ -79,27 +81,36 @@ class Lox:
 
     # static method
     def run_file(self, path):
+        global document
         file = open(path, "r")
         source = file.read()
         file.close()
 
-        self.run(source)
+        self.run(source, locals(), globals())
+        print document
 
         if self.had_error:
             sys.exit(65)
         elif self.had_runtime_error:
             sys.exit(70)
 
+    def start_thin_client_and_server(self):
+        LoteosThinClient.start(3)
+        LoteosThinServer.start(3, sys.argv[2])
+
 
 def main():
-    program = Lox()
+    program = Loteos()
     # The first argument in sys.argv will always be LoteosMain.py
     num_args = len(sys.argv) - 1
-    if num_args > 1:
-        print("Usage: pylox [script]")
+    if num_args > 2:
+        print("Usage: pyLoteos [script] node_id")
         os._exit(64)
     elif num_args == 1:
         program.run_file(sys.argv[1])
+    elif num_args == 2:
+        program.run_file(sys.argv[1], sys.argv[2])
+        Loteos.start_thin_client_and_server()
     else:
         program.run_prompt()
 

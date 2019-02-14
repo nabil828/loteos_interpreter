@@ -9,6 +9,10 @@ class CommandType(Enum):
     LOCK_COMMAND = auto()
     UNLOCK_COMMAND = auto()
 
+    REGISTER_COMMAND = auto()
+    PUBLISH_COMMAND = auto()
+    SUBSCRIBE_COMMAND = auto()
+
 
 class ConsistencyType(Enum):
     SC = auto()

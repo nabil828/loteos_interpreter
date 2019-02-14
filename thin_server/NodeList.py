@@ -3,19 +3,24 @@ __author__ = 'Owner'
 import socket
 # import struct
 import Mode
-import os
 # import Settings
+import os
 
 dirname = os.path.dirname(__file__)
+# filename = os.path.join(dirname, 'relative/path/to/file/you/want')
+
 fname_planet_lab = 'node_list_planetLab.txt'
-# fname_local = 'thin_client/node_list_local.txt'
-fname_local = os.path.join(dirname, 'node_list_local.txt')
+
+fname_client_server = os.path.join(dirname, 'client_server_list_local.txt')
 
 # For search, and for local mode
 
 
-def look_up_node_id(hashedKeyMod, mode_local=Mode.local):  # (i.e.) if key=apple (node 0) return the ip:port
-    if mode_local == Mode.local:
+def look_up_node_id(hashedKeyMod, mode_local=Mode.client_server):  # (i.e.) if key=apple (node 0) return the ip:port
+    if mode_local == Mode.client_server:
+        cwd = os.getcwd()
+        _file = open(fname_client_server, 'rU')
+    elif mode_local == Mode.local:
         _file = open(fname_local, 'rU')
     else:
         if mode_local.mode == Mode.planetLab:
